@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+venv/
+env/
+data/
+.kaggle/
+kaggle.json
+.DS_Store
+models/
+extension/lib/tf.min.js
+extension/model/*.bin
+extension/model/model.json
+*.zip
+train_log.txt
+eval_log.txt
+DeepGuard_AI_Project_Documentation.md
