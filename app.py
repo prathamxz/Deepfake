@@ -9,13 +9,11 @@ Run:  streamlit run app.py
 import os
 import time
 import tempfile
-import requests
 import numpy as np
 import streamlit as st
 import cv2
 from pathlib import Path
 from PIL import Image
-from streamlit_lottie import st_lottie
 
 # ── Path setup ──────────────────────────────────────────────────────────────
 from src.config import IMG_SIZE, BATCH_SIZE, MODEL_PATH, MODEL_PATH_H5, FACE_PADDING, FRAME_STEP, MODELS_DIR
@@ -23,26 +21,6 @@ from src.model import build_model, CUSTOM_OBJECTS
 
 # ── Decision Threshold ──────────────────────────────────────────────────────
 DECISION_THRESHOLD = 0.20
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Lottie Animation Loader
-# ─────────────────────────────────────────────────────────────────────────────
-@st.cache_data(show_spinner=False)
-def load_lottie_url(url: str):
-    """Fetches a Lottie JSON animation from a URL. Returns None on failure."""
-    try:
-        r = requests.get(url, timeout=5)
-        if r.status_code != 200:
-            return None
-        return r.json()
-    except Exception:
-        return None
-
-
-# Premium vector animations (loaded once, cached)
-LOTTIE_SHIELD = load_lottie_url("https://lottie.host/8099307d-dc77-44a6-89ba-8d26732efcfc/JmZcshvU2G.json")
-LOTTIE_PROCESSING = load_lottie_url("https://lottie.host/e7d7db31-50be-4b95-bf3a-96ce19999ffb/NnOnz6A2pW.json")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Page Config
@@ -69,16 +47,16 @@ st.markdown("""
 
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
-    /* ── Animated Cyber Glow Background ────────── */
+    /* ── Animated Global Background ────────────── */
     .stApp {
-        background: linear-gradient(-45deg, #070714, #0f0c20, #0b1528, #05050d);
-        background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite;
+        background: linear-gradient(135deg, #0a0a1a 0%, #101030 40%, #0d1117 100%);
+        background-size: 200% 200%;
+        animation: gradientShift 18s ease infinite;
     }
-    @keyframes gradientBG {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+    @keyframes gradientShift {
+        0% { background-position: 0% 0%; }
+        50% { background-position: 100% 100%; }
+        100% { background-position: 0% 0%; }
     }
 
     /* Floating particle layer */
@@ -118,19 +96,19 @@ st.markdown("""
     .hero::before {
         content: '';
         position: absolute;
-        top: -10%;
-        left: 25%;
-        width: 380px;
-        height: 380px;
-        background: radial-gradient(circle, rgba(108,99,255,0.25) 0%, transparent 70%);
-        filter: blur(40px);
+        top: -50px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(108,99,255,0.18) 0%, transparent 70%);
         pointer-events: none;
         z-index: 0;
-        animation: floatingGlow 8s ease-in-out infinite;
+        animation: glow 6s ease-in-out infinite;
     }
-    @keyframes floatingGlow {
-        0%, 100% { transform: translate(-50%, 0) scale(1); opacity: 0.7; }
-        50% { transform: translate(-30%, -20px) scale(1.15); opacity: 1; }
+    @keyframes glow {
+        0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+        50% { opacity: 1; transform: translateX(-50%) scale(1.15); }
     }
     .hero-badge {
         display: inline-block;
@@ -207,21 +185,17 @@ st.markdown("""
 
     /* ── Glass Card ────────────────────────────── */
     .glass-card {
-        background: rgba(255,255,255,0.02);
+        background: rgba(255,255,255,0.03);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08);
         border-radius: 20px;
         padding: 2rem;
         margin-bottom: 1.5rem;
-        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        will-change: transform;
+        transition: border-color 0.3s ease, transform 0.3s ease;
     }
     .glass-card:hover {
-        transform: translateY(-5px);
-        background: rgba(255,255,255,0.04);
         border-color: rgba(108,99,255,0.25);
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 20px rgba(108,99,255,0.05);
     }
     .glass-card-sm {
         background: rgba(255,255,255,0.04);
@@ -313,10 +287,6 @@ st.markdown("""
     }
     @keyframes barGrow { from { width: 0%; } }
     @keyframes gradientMove { to { background-position: -200% 0; } }
-    .matrix-bar {
-        animation: matrixGrow 1.1s cubic-bezier(0.165, 0.84, 0.44, 1) both;
-    }
-    @keyframes matrixGrow { from { width: 0% !important; } }
     .score-label {
         display: flex;
         justify-content: space-between;
@@ -330,17 +300,16 @@ st.markdown("""
 
     /* ── Upload Zone ───────────────────────────── */
     .upload-zone {
-        border: 2px dashed rgba(108,99,255,0.25);
+        border: 2px dashed rgba(108,99,255,0.3);
         border-radius: 20px;
         padding: 3rem 2rem;
         text-align: center;
-        background: rgba(108,99,255,0.02);
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        background: rgba(108,99,255,0.03);
+        transition: all 0.3s ease;
     }
     .upload-zone:hover {
         border-color: rgba(108,99,255,0.6);
         background: rgba(108,99,255,0.06);
-        transform: translateY(-3px);
     }
     .upload-icon { font-size: 3rem; margin-bottom: 0.5rem; animation: floatIcon 3s ease-in-out infinite; }
     @keyframes floatIcon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
@@ -678,36 +647,6 @@ def render_confidence_ring(confidence, is_fake):
     st.markdown(svg, unsafe_allow_html=True)
 
 
-def render_forensic_matrix(is_fake):
-    """Renders the CBAM/EfficientNetV2 'Forensic Artifact Matrix' visual panel."""
-    rows = [
-        ("Spatial Frequency Anomalies", "HIGH RISK" if is_fake else "STABLE", "84%" if is_fake else "12%"),
-        ("CBAM Geometric Texture Blending", "DISRUPTED" if is_fake else "NATURAL", "91%" if is_fake else "8%"),
-        ("EfficientNetV2 Feature Extraction", "INCONSISTENT" if is_fake else "VERIFIED", "76%" if is_fake else "4%"),
-    ]
-    color = "#ff416c" if is_fake else "#38ef7d"
-
-    rows_html = ""
-    for i, (label, status, width) in enumerate(rows):
-        margin = "margin-bottom: 1rem;" if i < len(rows) - 1 else ""
-        rows_html += f"""
-        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-            <span style="color:#b0b0d0; font-size:0.85rem;">{label}:</span>
-            <span style="color:{color}; font-weight:700;">{status}</span>
-        </div>
-        <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 4px; {margin}">
-            <div class="matrix-bar" style="height: 100%; width: {width}; background: {color}; border-radius: 4px; animation-delay: {i * 0.15}s;"></div>
-        </div>
-        """
-
-    st.markdown("##### 🔍 Forensic Artifact Matrix", unsafe_allow_html=True)
-    st.markdown(f"""
-    <div class="glass-card slide-up" style="padding: 1.5rem;">
-        {rows_html}
-    </div>
-    """, unsafe_allow_html=True)
-
-
 def render_verdict(is_fake, confidence, score):
     if is_fake:
         st.markdown('<div class="verdict-fake">🚨 AI-GENERATED CONTENT DETECTED</div>', unsafe_allow_html=True)
@@ -922,19 +861,14 @@ def main():
                 )
 
                 if analyze_btn:
-                    loader_placeholder = st.empty()
-                    with loader_placeholder.container():
-                        st.markdown(
-                            "<h5 style='text-align:center; color:#8b8bff;'>Analyzing Spatial Pixel Frequency...</h5>",
-                            unsafe_allow_html=True,
-                        )
-                        if LOTTIE_PROCESSING:
-                            st_lottie(LOTTIE_PROCESSING, height=180, key="img_processing_loader")
-                        else:
-                            st.progress(60, text="Running EfficientNetV2 + CBAM inference...")
-
+                    progress = st.progress(0, text="Initializing model...")
+                    progress.progress(25, text="Detecting faces with MTCNN...")
+                    time.sleep(0.15)
+                    progress.progress(60, text="Running EfficientNetV2 + CBAM inference...")
                     score, face_count, faces = analyze_image(image, model, detector)
-                    loader_placeholder.empty()
+                    progress.progress(100, text="Analysis complete!")
+                    time.sleep(0.15)
+                    progress.empty()
 
                     is_fake = score < DECISION_THRESHOLD
                     confidence = _calculate_confidence(score)
@@ -947,9 +881,6 @@ def main():
                         render_confidence_ring(confidence, is_fake)
                     with met_col:
                         render_metrics(confidence, face_count)
-
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    render_forensic_matrix(is_fake)
 
                     add_history(uploaded_image.name, "Image", is_fake, confidence, score)
 
@@ -972,6 +903,7 @@ def main():
                         st.toast("🚨 Deepfake detected!", icon="🚨")
                     else:
                         st.toast("✅ Looks authentic!", icon="✅")
+                        st.balloons()
 
                     if face_count > 0 and faces is not None:
                         st.markdown("<br>", unsafe_allow_html=True)
@@ -981,17 +913,14 @@ def main():
                             with face_cols[i % 5]:
                                 st.image(face.astype(np.uint8), caption=f"Face {i+1}", width=120)
             else:
-                st.markdown('<div class="glass-card fade-in" style="text-align:center; padding: 2.5rem 2rem;">', unsafe_allow_html=True)
-                if LOTTIE_SHIELD:
-                    st_lottie(LOTTIE_SHIELD, height=220, key="img_welcome_shield")
-                else:
-                    st.markdown("<div style='font-size: 4rem; margin-bottom: 1rem;'>🛡️</div>", unsafe_allow_html=True)
                 st.markdown("""
-                    <div style="color: #7a7a9e; font-size: 1.1rem; font-weight:600; margin-top:0.5rem;">
-                        Awaiting Forensic Core Initialization
+                <div class="glass-card fade-in" style="text-align:center; padding: 4rem 2rem;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">🛡️</div>
+                    <div style="color: #7a7a9e; font-size: 1.1rem;">
+                        Upload an image to begin analysis
                     </div>
                     <div style="color: #4a4a6e; font-size: 0.85rem; margin-top: 0.5rem;">
-                        Upload an image to begin analysis &mdash; the model detects AI-generated faces with 90-95% accuracy
+                        The model detects AI-generated faces with 90-95% accuracy
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1044,15 +973,6 @@ def main():
                     tfile.close()
 
                     try:
-                        lottie_col, bar_col = st.columns([1, 3])
-                        with lottie_col:
-                            if LOTTIE_PROCESSING:
-                                st_lottie(LOTTIE_PROCESSING, height=90, key="vid_processing_loader")
-                        with bar_col:
-                            st.markdown(
-                                "<div style='padding-top:1.2rem; color:#8b8bff; font-weight:600;'>Analyzing Spatial Pixel Frequency...</div>",
-                                unsafe_allow_html=True,
-                            )
                         progress_bar = st.progress(0, text="Detecting faces and analyzing frames...")
 
                         def update_progress(pct):
@@ -1087,9 +1007,6 @@ def main():
                                     "sub": f"{face_count} frames analyzed",
                                 })
 
-                            st.markdown("<br>", unsafe_allow_html=True)
-                            render_forensic_matrix(is_fake)
-
                             add_history(uploaded_video.name, "Video", is_fake, confidence, score)
 
                             if missed > 0:
@@ -1105,6 +1022,7 @@ def main():
                                 st.toast("🚨 Deepfake detected in video!", icon="🚨")
                             else:
                                 st.toast("✅ Video looks authentic!", icon="✅")
+                                st.balloons()
 
                             st.markdown("<br>", unsafe_allow_html=True)
                             st.markdown("##### 📈 Per-Frame Analysis")
@@ -1141,17 +1059,14 @@ def main():
                         except OSError:
                             pass
             else:
-                st.markdown('<div class="glass-card fade-in" style="text-align:center; padding: 2.5rem 2rem;">', unsafe_allow_html=True)
-                if LOTTIE_SHIELD:
-                    st_lottie(LOTTIE_SHIELD, height=220, key="vid_welcome_shield")
-                else:
-                    st.markdown("<div style='font-size: 4rem; margin-bottom: 1rem;'>🛡️</div>", unsafe_allow_html=True)
                 st.markdown("""
-                    <div style="color: #7a7a9e; font-size: 1.1rem; font-weight:600; margin-top:0.5rem;">
-                        Awaiting Forensic Core Initialization
+                <div class="glass-card fade-in" style="text-align:center; padding: 4rem 2rem;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">🛡️</div>
+                    <div style="color: #7a7a9e; font-size: 1.1rem;">
+                        Upload a video to begin analysis
                     </div>
                     <div style="color: #4a4a6e; font-size: 0.85rem; margin-top: 0.5rem;">
-                        Upload a video to begin analysis &mdash; DeepGuard AI scans each frame for AI-generated content
+                        DeepGuard AI analyzes each frame for AI-generated content
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
