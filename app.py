@@ -1198,7 +1198,6 @@ def render_sparkle_burst():
         )
     st.markdown(f'<div class="sparkle-burst">{sparkles_html}</div>', unsafe_allow_html=True)
 
-
 def render_chime():
     """Plays a short audio chime if sound is enabled and the asset is available."""
     if not st.session_state.get("sound_enabled", False):
@@ -1210,7 +1209,6 @@ def render_chime():
         <source src="{CHIME_DATA_URI}" type="audio/wav">
     </audio>
     """, height=0)
-
 
 def render_history_sidebar():
     with st.sidebar:
