@@ -1156,7 +1156,7 @@ def render_stats_strip():
         .stat-pill b { color: #e0e0ff; font-weight: 800; }
     </style>
     <div class="stats-strip">
-        <div class="stat-pill">🎯 <b><span class="counter" data-target="95" data-suffix="%">0%</span></b>&nbsp;Accuracy</div>
+        <div class="stat-pill">🎯 <b><span class="counter" data-target="90" data-suffix="%">0%</span></b>&nbsp;Accuracy</div>
         <div class="stat-pill">⚡ <b>Real-time</b>&nbsp;Inference</div>
         <div class="stat-pill">🔒 <b><span class="counter" data-target="100" data-suffix="%">0%</span></b>&nbsp;Local & Private</div>
         <div class="stat-pill">🧠 <b><span class="counter" data-target="140" data-suffix="K">0K</span></b>&nbsp;Training Images</div>
